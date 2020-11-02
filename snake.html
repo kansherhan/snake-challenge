@@ -1,0 +1,208 @@
+<canvas id="canvas"></canvas>
+<script>
+	class Pos {
+		constructor(x = 0, y = 0) {
+			this.x = x;
+			this.y = y;
+		}
+
+		static equale(p1, p2) {
+			return p1.x == p2.x && p1.y == p2.y;
+		}
+	}
+
+	class Block {
+		constructor(color) {
+			this.pos = new Pos();
+			this.color = color;
+		}
+
+		draw() {
+			drawRect(this.pos, this.color);
+		}
+	}
+
+	class Snake extends Block {
+		constructor() {
+			super("Black");
+
+			this.step = new Pos();
+
+			this.bodyes = [];
+
+			this.isAlive = true;
+		}
+
+		collised(applePos) {
+			if (Pos.equale(this.pos, applePos)) {
+				this.addBody();
+				apple.randomPosition();
+			} else {
+				for (let i = 0; i < this.bodyes.length; i++) {
+					if (Pos.equale(this.pos, this.bodyes[i])) {
+						this.isAlive = false;
+					}
+				}
+			}
+		}
+
+		addBody() {
+			this.bodyes.push(this.pos);
+		}
+
+		draw() {
+			super.draw();
+
+			for (let i = 0; i < this.bodyes.length; i++) {
+				drawRect(this.bodyes[i], this.color);
+			}
+		}
+
+		move() {
+			let prev = this.pos;
+
+			for (let i = 0; i < this.bodyes.length; i++) {
+				let temp = this.bodyes[i];
+				this.bodyes[i] = prev;
+				prev = temp;
+			}
+
+			let pos = this.pos;
+			let step = this.step;
+
+			this.pos = new Pos(pos.x + step.x, pos.y + step.y);
+
+			this.pos.x = this.loop(0, grid.x - 1, this.pos.x);
+			this.pos.y = this.loop(0, grid.y - 1, this.pos.y);
+		}
+
+		loop(min, max, value) {
+			if (min > value) {
+				return max;
+			} else if (max < value) {
+				return min;
+			} else {
+				return value;
+			}
+		}
+	}
+
+	class Apple extends Block {
+		constructor() {
+			super("Red");
+
+			this.randomPosition();
+		}
+
+		randomPosition() {
+			function randPos() {
+				return new Pos(random(0, grid.x - 1), random(0, grid.y - 1));
+			}
+
+			while(true) {
+				let pos = randPos();
+
+				if (!Pos.equale(snake.pos, pos)) {
+					let stop = true;
+
+					for (let i = 0; i < snake.bodyes.length; i++) {
+						if (Pos.equale(snake.bodyes[i], pos)) {
+							stop = false;
+						}
+					}
+
+					if (stop) {
+						this.pos = pos;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	let canvas = document.getElementById("canvas");
+	let ctx = canvas.getContext("2d");
+
+	let size = 15;
+	let padding = 3;
+
+	let background = "LightGray";
+
+	let grid = new Pos(31, 20);
+
+	let snake = new Snake();
+
+	let apple = new Apple();
+
+	snake.pos = new Pos(Math.floor(grid.x / 2), Math.floor(grid.y / 2));
+
+	canvas.width = grid.x * size + (padding * grid.x);
+	canvas.height = grid.y * size + (padding * grid.y);
+
+	function drawRect(pos, color) {
+		ctx.fillStyle = color;
+
+		let rectSize = size + padding;
+		ctx.fillRect(rectSize * pos.x, rectSize * pos.y, size, size);
+	}
+
+	function drawGrid() {
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		for (let y = 0; y < grid.y; y++) {
+			for (let x = 0; x < grid.x; x++) {
+				drawRect(new Pos(x, y), background);
+			}
+		}
+	}
+
+	function random(min, max) {
+		return Math.floor(min + Math.random() * (max + 1 - min));
+	}
+
+	function update() {
+		if (snake.isAlive) {
+			drawGrid();
+
+			snake.move();
+
+			snake.collised(apple.pos);
+
+			snake.draw();
+			apple.draw();
+		} else {
+			alert("Game over");
+		}
+	}
+
+	window.onkeydown = (k) => {
+		let key = k.key;
+		let move = new Pos(0, 0);
+
+		const keys = {
+			x: {
+				a: -1,
+				d: 1
+			},
+			y: {
+				w: -1,
+				s: 1
+			}
+		};
+
+		if (keys.x[key] != undefined) {
+			move.x = keys.x[key];
+		}
+		else if (keys.y[key] != undefined) {
+			move.y = keys.y[key];
+		} else {
+			return;
+		}
+
+		snake.step = move;
+
+		update();
+	};
+
+	update();
+</script>
